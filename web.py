@@ -1,14 +1,13 @@
 import numpy as np
 import streamlit as st
 import nltk
+import requests
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
 from string import punctuation
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 from langdetect import detect_langs
-from googletrans import Translator
-import requests
 
 nltk.download('punkt')
 nltk.download('stopwords')
