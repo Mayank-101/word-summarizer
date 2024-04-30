@@ -1,3 +1,68 @@
+import numpy as np
+import streamlit as st
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize, word_tokenize
+from string import punctuation
+from sklearn.metrics.pairwise import cosine_similarity
+import networkx as nx
+from langdetect import detect_langs
+from googletrans import Translator
+
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Load GloVe word embeddings
+word_embeddings = {}
+with open('glove.6B.100d.txt', encoding='utf-8') as f:
+    for line in f:
+        values = line.split()
+        word = values[0]
+        coefs = np.asarray(values[1:], dtype='float32')
+        word_embeddings[word] = coefs
+
+# Function to remove stopwords
+def remove_stop_words(text):
+    stop_words = set(stopwords.words('english'))
+    word_tokens = nltk.word_tokenize(text)
+    filtered_text = ' '.join([w for w in word_tokens if not w in stop_words])
+    return filtered_text
+
+# Function to remove punctuations
+def remove_punctuations(text):
+    translator = str.maketrans('', '', punctuation)
+    text_without_punctuations = text.translate(translator)
+    sentences = sent_tokenize(text_without_punctuations)
+    return sentences
+
+# Function to convert text to lowercase
+def convert_lower(text):
+    return text.lower()
+
+# Function to generate summary
+def generate_summary(text, word_embeddings):
+    lower_text = convert_lower(text)
+    new_text = remove_stop_words(lower_text)
+    sentences = sent_tokenize(text)
+    cleaned_sentences = remove_punctuations(new_text)
+
+    sentence_vectors = []
+    for sentence in sentences:
+        words = word_tokenize(sentence)
+        sentence_vector = np.mean([word_embeddings.get(word, np.zeros((100,))) for word in words], axis=0)
+        sentence_vectors.append(sentence_vector)
+
+    sim_mat = np.zeros([len(sentences), len(sentences)])
+    for i in range(len(sentences)):
+        for j in range(len(sentences)):
+            if i != j:
+                sim_mat[i][j] = cosine_similarity(sentence_vectors[i].reshape(1, -1), sentence_vectors[j].reshape(1, -1))[0, 0]
+
+    nx_graph = nx.from_numpy_array(sim_mat)
+    scores = nx.pagerank(nx_graph)
+    ranked_sentences = sorted(((scores[i],s) for i,s in enumerate(sentences)), reverse=True)
+
+    return ranked_sentences
 # Streamlit UI
 def main():
     st.title("Text Summarization App")
