@@ -118,7 +118,10 @@ def main():
             for _, sentence in summarized_text[:5]:
                 try:
                     translated_sentence = translator.translate(sentence, dest=lang_code).text
-                    translated_sentences.append(translated_sentence)
+                    if translated_sentence:
+                        translated_sentences.append(translated_sentence)
+                    else:
+                        st.warning(f"Translation failed for '{sentence}' with empty translation.")
                 except Exception as e:
                     st.warning(f"Translation failed for '{sentence}' with error: {e}")
 
