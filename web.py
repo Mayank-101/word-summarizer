@@ -8,6 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 from langdetect import detect_langs
 from googletrans import Translator
+import requests
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -63,6 +64,27 @@ def generate_summary(text, word_embeddings):
     ranked_sentences = sorted(((scores[i],s) for i,s in enumerate(sentences)), reverse=True)
 
     return ranked_sentences
+
+# Function for translation using Microsoft Translator Text API
+def translate_text_microsoft(text, dest_lang):
+    subscription_key = '6380c68dff384955ae2ca406e989867a'
+    endpoint = 'https://api.cognitive.microsofttranslator.com'
+    path = '/translate?api-version=3.0'
+
+    params = '&to=' + dest_lang
+    constructed_url = endpoint + path + params
+
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key,
+        'Content-type': 'application/json',
+        'X-ClientTraceId': str(uuid.uuid4())
+    }
+
+    body = [{'text': text}]
+    response = requests.post(constructed_url, headers=headers, json=body)
+    translated_text = response.json()[0]['translations'][0]['text']
+    return translated_text
+    
 # Streamlit UI
 def main():
     st.title("Text Summarization App")
@@ -113,18 +135,14 @@ def main():
                 st.error("Error detecting language: " + str(lang_error))
 
             # Translation
-            translator = Translator()
             translated_sentences = []
             for _, sentence in summarized_text[:5]:
-                try:
-                    translated_sentence = translator.translate(sentence, dest=lang_code).text
-                    if translated_sentence:
-                        translated_sentences.append(translated_sentence)
-                    else:
-                        st.warning(f"Translation failed for '{sentence}' with empty translation.")
-                except Exception as e:
-                    st.warning(f"Translation failed for '{sentence}' with error: {e}")
-
+               try:
+                   translated_sentence = translate_text_microsoft(sentence, lang_code)
+                   translated_sentences.append(translated_sentence)
+               except Exception as e:
+                   st.warning(f"Translation failed for '{sentence}' with error: {e}")
+            
             st.subheader("Translated Summary:")
             for translated_sentence in translated_sentences:
                 st.write(translated_sentence)
