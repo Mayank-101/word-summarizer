@@ -5,3 +5,4 @@ langdetect==1.0.9
 googletrans==3.0.0
 numpy
 scikit-learn
+Requests==2.31.0
